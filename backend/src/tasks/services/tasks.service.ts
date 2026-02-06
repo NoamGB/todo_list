@@ -35,9 +35,7 @@ export class TasksService {
 
     if (dto.dueDate) {
       const dueDate = new Date(dto.dueDate);
-      console.log(dueDate);
-      console.log(new Date());
-      if (dueDate < new Date()) throw new BadRequestException('Due date must be in the future');
+      if (dueDate >= new Date()) throw new BadRequestException('Due date must be in the future');
     }
 
     const task = this.taskRepository.create(dto);

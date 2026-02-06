@@ -1,38 +1,43 @@
 import React, { useEffect, useState } from 'react';
-
-import { Container, Typography, Button } from '@mui/material';
-// import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import {
+  Container,
+  Typography,
+  Button,
+  Paper,
+  Box,
+  AppBar,
+  Toolbar,
+  Snackbar,
+  Alert,
+} from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 
 import TaskList from './components/task/TaskList';
 import TaskModal from './components/task/TaskModal';
 import DeleteDialog from './components/task/DeleteDialog';
 import { getTasks, createTask, updateTask, deleteTask } from './api/tasksApi';
-import AlertDialog from './components/task/AlertDialog';
 
 const App = () => {
   const [tasks, setTasks] = useState<any[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any | null>(null);
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error';
+  }>({ open: false, message: '', severity: 'success' });
 
-  const [alertOpen, setAlertOpen] = useState(false);
-const [alertMessage, setAlertMessage] = useState('');
-const [alertType, setAlertType] = useState<'success' | 'error'>('success');
+  const showAlert = (message: string, type: 'success' | 'error' = 'success') => {
+    setSnackbar({ open: true, message, severity: type });
+  };
 
-const showAlert = (message: string, type: 'success' | 'error' = 'success') => {
-  setAlertMessage(message);
-  setAlertType(type);
-  setAlertOpen(true);
-};
-
-  // Récupération des tâches avec try/catch
   const fetchTasks = async () => {
     try {
       const data = await getTasks();
       setTasks(data);
-    } catch (error: any) {
-      showAlert('Error fetching tasks', 'error');
+    } catch {
+      showAlert('Erreur lors du chargement des tâches', 'error');
     }
   };
 
@@ -40,55 +45,40 @@ const showAlert = (message: string, type: 'success' | 'error' = 'success') => {
     fetchTasks();
   }, []);
 
-  // Validation frontend
   const validateTask = (task: any) => {
     if (!task.title || task.title.trim() === '') {
-      showAlert('The title is required', 'error');
+      showAlert('Le titre est obligatoire', 'error');
       return false;
     }
-    // if (!task.description || task.description.trim() === '') {
-    //   showAlert('Description is required', 'error');
-    //   return false;
-    // }
-    // if (!task.dueDate) {
-    //   showAlert('Due date is required', 'error');
-    //   return false;
-    // }
-    // const dueDate = new Date(task.dueDate);
-    // if (dueDate < new Date()) {
-    //   showAlert('Due date must be in the future', 'error');
-    //   return false;
-    // }
     return true;
   };
 
-  // Création / mise à jour
   const handleSave = async (task: any) => {
     if (!validateTask(task)) return;
-
     try {
       if (selectedTask) {
         await updateTask(selectedTask.id, task);
-        showAlert('Task modified successfully', 'success');
+        showAlert('Tâche modifiée avec succès', 'success');
       } else {
         await createTask(task);
-        showAlert('Task added successfully', 'success');
+        showAlert('Tâche ajoutée avec succès', 'success');
       }
       setSelectedTask(null);
       setModalOpen(false);
       await fetchTasks();
     } catch (error: any) {
-      showAlert(error?.response?.data?.message || 'Error saving task', 'error');
+      showAlert(
+        error?.response?.data?.message || 'Erreur lors de l\'enregistrement',
+        'error'
+      );
     }
   };
 
-  // Editer une tâche
   const handleEdit = (task: any) => {
     setSelectedTask(task);
     setModalOpen(true);
   };
 
-  // Supprimer une tâche
   const handleDeleteConfirm = (task: any) => {
     setSelectedTask(task);
     setDeleteOpen(true);
@@ -98,35 +88,73 @@ const showAlert = (message: string, type: 'success' | 'error' = 'success') => {
     if (!selectedTask) return;
     try {
       await deleteTask(selectedTask.id);
-      showAlert('Task deleted successfully', 'success');
+      showAlert('Tâche supprimée avec succès', 'success');
       setSelectedTask(null);
       setDeleteOpen(false);
       await fetchTasks();
-    } catch (error: any) {
-      showAlert('Error deleting task', 'error');
+    } catch {
+      showAlert('Erreur lors de la suppression', 'error');
     }
   };
 
   return (
-    <Container maxWidth="md" sx={{ mt: 4 }}>
-      <Typography variant="h4" gutterBottom align="center">
-        Todo List
-      </Typography>
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+      <AppBar position="static" elevation={0} sx={{ borderRadius: 0 }}>
+        <Toolbar>
+          <Typography variant="h6" component="span" sx={{ flexGrow: 1, fontWeight: 700 }}>
+            Todo List
+          </Typography>
+        </Toolbar>
+      </AppBar>
 
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={() => setModalOpen(true)}
-        sx={{ mb: 3 }}
-      >
-        Add a task
-      </Button>
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            borderRadius: 3,
+            bgcolor: 'background.paper',
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: 2,
+              mb: 3,
+            }}
+          >
+            <Typography variant="h5" fontWeight={600} color="text.primary">
+              Mes tâches
+            </Typography>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setModalOpen(true)}
+              sx={{ borderRadius: 2 }}
+            >
+              Ajouter une tâche
+            </Button>
+          </Box>
 
-      <TaskList tasks={tasks} onEdit={handleEdit} onDelete={handleDeleteConfirm} />
+          <TaskList
+            tasks={tasks}
+            onEdit={handleEdit}
+            onDelete={handleDeleteConfirm}
+          />
+        </Paper>
+      </Container>
 
       <TaskModal
         open={modalOpen}
-        handleClose={() => { setModalOpen(false); setSelectedTask(null); }}
+        handleClose={() => {
+          setModalOpen(false);
+          setSelectedTask(null);
+        }}
         handleSave={handleSave}
         task={selectedTask}
       />
@@ -138,17 +166,22 @@ const showAlert = (message: string, type: 'success' | 'error' = 'success') => {
         taskTitle={selectedTask?.title}
       />
 
-<AlertDialog
-  open={alertOpen}
-  onClose={() => setAlertOpen(false)}
-  message={alertMessage}
-  type={alertType}
-  duration={3000} // se ferme après 3 secondes
-/>
-
-
-
-    </Container>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </Box>
   );
 };
 
