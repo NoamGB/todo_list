@@ -12,14 +12,23 @@ export interface Task {
 }
 
 export const getTasks = async (): Promise<Task[]> => {
-    try {
-        const res = await axios.get(`${API_URL}/tasks`);
-        return res.data.data;
-    } catch (error) {
-        // toast.error('Error fetching tasks:', error);
-        console.error('Error fetching tasks:', error);
-        throw error;
-    }
+  try {
+    const res = await axios.get(`${API_URL}/tasks`);
+    return res.data.data;
+  } catch (error) {
+    console.error('Error fetching tasks:', error);
+    throw error;
+  }
+};
+
+export const getTask = async (id: number): Promise<Task | null> => {
+  try {
+    const res = await axios.get(`${API_URL}/tasks/${id}`);
+    return res.data.data ?? null;
+  } catch (error) {
+    console.error('Error fetching task:', error);
+    throw error;
+  }
 };
 
 export const createTask = async (task: Partial<Task>) => {
